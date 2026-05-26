@@ -171,27 +171,9 @@ bool Pack::load() {
 	TRACE_PROC
 	ustring dir(pathElementsDb());
 
-	PackGroup *pk;
-	sqlite3 *ppDb = NULL;
-	sqlite3_open(dir.c_str(), &ppDb);
-	sqlite3_stmt *ppStmt;
-	sqlite3_prepare(ppDb, "SELECT name FROM groups ORDER BY pos", -1, &ppStmt, NULL);
-	while(sqlite3_step(ppStmt) != SQLITE_DONE) {
-		pk = new PackGroup();
-		pk->name = (const char*)sqlite3_column_text(ppStmt, 0);
-		groups.push_back(pk);
-	}
-	sqlite3_finalize(ppStmt);
-
-	for(std::list<PackGroup*>::iterator p = groups.begin(); p != groups.end(); p++) {
-		sqlite3_prepare(ppDb, (ustring("SELECT e.name, e.info FROM elements e, groups g WHERE g.name = '") + (*p)->name + "' AND e.tab = g.id ORDER BY e.pos").c_str(), -1, &ppStmt, NULL);
-		while(sqlite3_step(ppStmt) != SQLITE_DONE) {
-			(*p)->elements.push_back(addElement((const char*)sqlite3_column_text(ppStmt, 0), (const char*)sqlite3_column_text(ppStmt, 1)));
-		}
-		sqlite3_finalize(ppStmt);
-	}
-	sqlite3_close(ppDb);
-
+	// Stub - SQLite removed, no database access available
+	// Original code used sqlite3 to load groups and elements from elements.db
+	
 	void *id = mdb.begin_read_pack_compilers(name);
 	PackCompilerInfo pc_info;
 	while(mdb.read_pack_compilers(id, pc_info)) {
@@ -207,30 +189,8 @@ bool Pack::load() {
 
 void Pack::addElement(const ustring &tab, const ustring &name, const ustring &info) {
 	TRACE_PROC
-	ustring dir(pathElementsDb());
-
-	sqlite3 *ppDb = NULL;
-	sqlite3_open(dir.c_str(), &ppDb);
-	sqlite3_stmt *ppStmt;
-	sqlite3_prepare(ppDb, (ustring("SELECT id FROM groups WHERE name = '") + tab + "'").c_str(), -1, &ppStmt, NULL);
-	int gid = 0;
-	if(sqlite3_step(ppStmt) != SQLITE_DONE) {
-		gid = sqlite3_column_int(ppStmt, 0);
-	}
-	sqlite3_finalize(ppStmt);
-
-	sqlite3_prepare(ppDb, (ustring("SELECT pos FROM elements WHERE tab = ") + int_to_str(gid) + " ORDER BY pos DESC LIMIT 1").c_str(), -1, &ppStmt, NULL);
-	int pos = 0;
-	if(sqlite3_step(ppStmt) != SQLITE_DONE) {
-		pos = sqlite3_column_int(ppStmt, 0) + 1;
-	}
-	sqlite3_finalize(ppStmt);
-
-	ustring sql = ustring::compose("INSERT INTO elements(name, info, tab, pos) VALUES('%1', '%2', %3, %4)", name, info, gid, pos);
-	//DEBUG_MSG("Try to add: " << sql.c_str())
-	sqlite3_exec(ppDb, sql.c_str(), NULL, NULL, NULL);
-
-	sqlite3_close(ppDb);
+	// Stub - SQLite removed, no database access available
+	// Original code used sqlite3 to add element to elements.db
 }
 
 void Pack::addGroup(const ustring &tab, const ustring &group) {

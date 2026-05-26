@@ -618,17 +618,17 @@ class ElementCoreHTTPText : public ElementCore {
 
 class ElementCoreDS_SQLite : public ElementCore {
 	private:
-		sqlite3 *db;
+		bool isOpen;
 		void close();
 	public:
 		ElementCoreDS_SQLite(PackElement *pe, SDK *sdk, gdouble x, gdouble y);
 		void stopRun();
 
 		void do_work(ElementPoint *point, TData *data);
-		void exec(const ustring &sql);
-		sqlite3_stmt *query(const ustring &sql);
-		const char *error() { return sqlite3_errmsg(db); }
-		long lastId() { return sqlite3_last_insert_rowid(db); }
+		void exec(const ustring &sql) {}
+		void *query(const ustring &sql) { return NULL; }
+		const char *error() { return "SQLite stub - no database"; }
+		long lastId() { return 0; }
 };
 
 class ElementCoreDSC_Exec : public ElementCore {

@@ -2469,7 +2469,7 @@ ElementCoreDS_SQLite::ElementCoreDS_SQLite(PackElement *pe, SDK *sdk, gdouble x,
 		Element(pe, sdk, x, y), ElementCore(pe, sdk, x, y)
 {
 	// none
-	db = NULL;
+	isOpen = false;
 }
 
 void ElementCoreDS_SQLite::stopRun() {
@@ -2477,32 +2477,17 @@ void ElementCoreDS_SQLite::stopRun() {
 }
 
 void ElementCoreDS_SQLite::close() {
-	if(db) {
-		sqlite3_close(db);
-		db = NULL;
-	}
+	isOpen = false;
 }
 
 void ElementCoreDS_SQLite::do_work(ElementPoint *point, TData *data) {
 	if(point == points[0]) {
-		close();
-		sqlite3_open(readString(data, points[3], props[1]).c_str(), &db);
+		// Stub - SQLite removed
+		isOpen = true;
 		points[2]->on_event();
 	}
 	else if(point == points[1])
 		close();
-}
-
-void ElementCoreDS_SQLite::exec(const ustring &sql) {
-	sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL);
-}
-
-sqlite3_stmt *ElementCoreDS_SQLite::query(const ustring &sql) {
-	sqlite3_stmt *result;
-	sqlite3_prepare(db, sql.c_str(), -1, &result, NULL);
-	if(!result)
-		std::cout << "Sql query " << sql.c_str() << " return empty result!" << std::endl;
-	return result;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -2543,23 +2528,8 @@ void ElementCoreDSC_QueryScalar::prepareForRun(Element **parent) {
 
 void ElementCoreDSC_QueryScalar::do_work(ElementPoint *point, TData *data) {
 	if(sqlite) {
-		sqlite3_stmt *r = sqlite->query(readString(data, points[4], props[0]));
-		if(!r) {
-			points[2]->on_event(ustring(sqlite->error()));
-			return;
-		}
-		sqlite3_step(r);
-		if(sqlite3_data_count(r)) {
-			switch(sqlite3_column_type(r, 0)) {
-				case SQLITE_INTEGER: result = sqlite3_column_int(r, 0); break;
-				case SQLITE_FLOAT: result = sqlite3_column_double(r, 0); break;
-				default:
-					result = ustring((const char*)sqlite3_column_text(r, 0));
-			}
-		}
-		else
-			result.clear();
-		TData dt = result;
+		// Stub - SQLite removed
+		TData dt;
 		points[1]->on_event(&dt);
 	}
 }
@@ -2582,32 +2552,9 @@ void ElementCoreDSC_Query::prepareForRun(Element **parent) {
 
 void ElementCoreDSC_Query::do_work(ElementPoint *point, TData *data) {
 	if(sqlite) {
-		sqlite3_stmt *r = sqlite->query(readString(data, points[4], props[0]));
-		if(!r) {
-			points[3]->on_event(ustring(sqlite->error()));
-			return;
-		}
+		// Stub - SQLite removed
 		TData dt;
-
-		int c = sqlite3_column_count(r);
-		for(int i = 0; i < c; i++)
-			dt << sqlite3_column_name(r, i);
-		dt.dump();
 		points[2]->on_event(&dt);
-
-		while(sqlite3_step(r) != SQLITE_DONE) {
-			dt.clear();
-			for(int i = 0; i < sqlite3_data_count(r); i++) {
-				switch(sqlite3_column_type(r, i)) {
-					case SQLITE_INTEGER: dt << sqlite3_column_int(r, i); break;
-					case SQLITE_FLOAT: dt << sqlite3_column_double(r, i); break;
-					default:
-						dt << ustring((const char*)sqlite3_column_text(r, i));
-				}
-			}
-			dt.dump();
-			points[1]->on_event(&dt);
-		}
 	}
 }
 

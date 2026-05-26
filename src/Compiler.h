@@ -9,7 +9,6 @@
 #define COMPILER_H_
 
 #include "share.h"
-#include "sqlite3.h"
 
 class Compiler {
 	private:

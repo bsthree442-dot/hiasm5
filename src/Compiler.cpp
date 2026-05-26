@@ -19,24 +19,9 @@ CompilerCollection::CompilerCollection() {
 }
 
 void CompilerCollection::load() {
-	CompilerInfo cmp;
-
-	void *id = mdb.begin_read_compilers();
-	while(mdb.read_compilers(id, cmp)) {
-		Compiler *compiler = new Compiler();
-		compiler->id = cmp.id;
-		compiler->ext = cmp.ext;
-		compiler->name = cmp.name;
-		compiler->path = cmp.path;
-		compiler->cmd = cmp.cmd;
-		push_back(compiler);
-	}
-	mdb.end_read(id);
+	// Stub - no database available
 }
 
 Compiler *CompilerCollection::getById(int id) {
-	for(iterator c = begin(); c != end(); c++)
-		if((*c)->id == id)
-			return *c;
 	return NULL;
 }

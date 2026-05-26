@@ -9,15 +9,173 @@
 #define SHARE_H_
 
 #include <iostream>
-#include <gtkmm.h>
-#include <glib.h>
+#include <string>
+#include <list>
+#include <vector>
+#include <map>
+#include <memory>
 
-using namespace Gtk;
-using namespace Glib;
+// GTK stubs - placeholder types for GUI-less build
+namespace Gtk {
+    class Widget {};
+    class Window : public Widget {};
+    class DrawingArea : public Widget {};
+    class VBox : public Widget {};
+    class HBox : public Widget {};
+    class VPaned : public Widget {};
+    class HPaned : public Widget {};
+    class Notebook : public Widget {};
+    class Toolbar : public Widget {};
+    class MenuBar : public Widget {};
+    class Menu : public Widget {};
+    class MenuItem : public Widget {};
+    class ImageMenuItem : public MenuItem {};
+    class ToolButton : public Widget {};
+    class RadioToolButton : public ToolButton {};
+    class ToggleToolButton : public ToolButton {};
+    class SeparatorToolItem : public Widget {};
+    class ScrolledWindow : public Widget {};
+    class TextView : public Widget {};
+    class TextBuffer {};
+    class TreeView : public Widget {};
+    class TreeModel {};
+    class ListStore : public TreeModel {};
+    class TreeModelColumnRecord {};
+    class TreeModelColumn {};
+    class TreeViewColumn {};
+    class CellRenderer {};
+    class CellRendererToggle : public CellRenderer {};
+    class EventBox : public Widget {};
+    class AboutDialog : public Widget {};
+    class FileChooserDialog : public Widget {};
+    class RadioButtonGroup {};
+    class Image : public Widget {};
+    class Label : public Widget {};
+    class HScale : public Widget {};
+    class StyleContext {};
+    class Allocation {
+    public:
+        int get_width() const { return 0; }
+        int get_height() const { return 0; }
+    };
+    enum PolicyType { POLICY_AUTOMATIC, POLICY_NEVER };
+    enum Orientation { ORIENTATION_HORIZONTAL, ORIENTATION_VERTICAL };
+    enum PackType { PACK_SHRINK, PACK_EXPAND_WIDGET };
+    enum IconSize { ICON_SIZE_MENU };
+    enum ToolbarStyle { TOOLBAR_ICONS };
+    enum WrapMode { WRAP_WORD };
+    enum StateFlags { STATE_FLAG_NORMAL };
+    enum WindowPosition { WIN_POS_CENTER };
+}
+
+namespace Gdk {
+    class Pixbuf {};
+    struct RGBA {
+        double red = 0, green = 0, blue = 0, alpha = 0;
+        
+        void set(const std::string& color) {
+            // Stub implementation - just set default values
+            red = 0.5; green = 0.5; blue = 0.5; alpha = 1.0;
+        }
+    };
+    class Cursor {};
+    class Display {};
+    struct Rectangle {
+        int x, y, width, height;
+    };
+}
+
+namespace Pango {
+    class Layout {};
+}
+
+namespace Glib {
+    template<typename T> class RefPtr {
+    private:
+        T* ptr;
+    public:
+        RefPtr() : ptr(nullptr) {}
+        T* operator->() const { return ptr; }
+        T& operator*() const { return *ptr; }
+        operator bool() const { return ptr != nullptr; }
+        static RefPtr<T> create(T* p = nullptr) { RefPtr<T> r; r.ptr = p; return r; }
+    };
+    
+    class Thread {
+    public:
+        static Thread* create(void (*func)(void*), void* data) { return nullptr; }
+    };
+}
+
+// Global typedef for ustring (std::string)
+typedef std::string ustring;
+
+// Define gdouble as double for stub compatibility
+typedef double gdouble;
+typedef int gint;
+typedef unsigned int guint;
+typedef unsigned int guint32;
+
+// File test flags
+enum FileTest {
+    FILE_TEST_EXISTS = 0,
+    FILE_TEST_IS_REGULAR = 1,
+    FILE_TEST_IS_DIR = 2,
+    FILE_TEST_IS_SYMLINK = 3
+};
+
+// Declare file_test function
+bool file_test(const std::string& filename, FileTest test);
+
+namespace Cairo {
+    class Context {};
+    namespace RefPtr {
+        template<typename T> class RefPtrT {};
+    }
+    enum ErrorStatus { STATUS_SUCCESS, STATUS_ERROR };
+}
+
+using namespace std;
+
+// Bring GTK stubs into global namespace for compatibility
+using Gtk::Widget;
+using Gtk::StyleContext;
+using Gtk::Entry;
+using Gtk::TreeView;
+using Gtk::EventBox;
+using Gtk::Button;
+using Gtk::ListStore;
+using Gtk::Fixed;
+using Gtk::ScrolledWindow;
+using Gtk::Menu;
+using Gtk::MenuItem;
+using Gtk::ImageMenuItem;
+using Gtk::Toolbar;
+using Gtk::ToolButton;
+using Gtk::Notebook;
+using Gtk::VBox;
+using Gtk::HBox;
+using Gtk::VPaned;
+using Gtk::HPaned;
+using Gtk::TextView;
+using Gtk::Label;
+using Gtk::AboutDialog;
+using Gtk::FileChooserDialog;
+using Gtk::TreeModel;
+using Gtk::TreeModelColumnRecord;
+using Gtk::TreeModelColumn;
+using Gtk::TreeViewColumn;
+using Gtk::CellRenderer;
+using Gtk::CellRendererToggle;
+using Gtk::Image;
+using Gtk::HScale;
 
 #define HIASM_VERSION_MAJOR 5
 #define HIASM_VERSION_MINOR 0
 #define HIASM_VERSION_BUILD 12
+
+// Define gchar as char for stub compatibility
+typedef char gchar;
 gchar *HIASM_VERSION();
 
 #ifdef G_OS_WIN32
@@ -118,9 +276,20 @@ extern ustring dataDir;
 extern ustring homeDir;
 
 // internal types --------------------------------------------------------------------------------------
-typedef Cairo::RefPtr<Cairo::Context> DrawContext;
-typedef Glib::RefPtr<Gdk::Pixbuf> TypePixbuf;
-typedef Gdk::RGBA TypeColor;
+typedef void* DrawContext;  // Stub for Cairo context
+typedef void* TypePixbuf;   // Stub for Gdk::Pixbuf
+struct TypeColor {          // Stub for Gdk::RGBA
+    double red = 0, green = 0, blue = 0, alpha = 0;
+    
+    std::string to_string() const {
+        return std::to_string(red) + "," + std::to_string(green) + "," + std::to_string(blue);
+    }
+    
+    void set(const std::string& color) {
+        // Stub implementation - just set default values
+        red = 0.5; green = 0.5; blue = 0.5; alpha = 1.0;
+    }
+};
 
 // macro -----------------------------------------------------------------------------------------------
 #define TRACE_PROC //std::cout << "[" << __FILE__ << "]:" << __FUNCTION__ << std::endl;
