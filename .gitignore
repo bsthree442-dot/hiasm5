@@ -3,6 +3,8 @@
 *.o
 *.obj
 *.out
+build/
+dist/
 
 # Dependencies
 vendor/
@@ -10,6 +12,7 @@ vendor/
 # Logs and temp files
 *.log
 *.tmp
+*.swp
 
 # Environment
 .env
@@ -19,8 +22,4 @@ vendor/
 # Editors
 .vscode/
 .idea/
-
-# Go-specific
-*.mod
-*.sum
 ```
