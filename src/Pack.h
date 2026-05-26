@@ -9,7 +9,6 @@
 #define PACK_H_
 
 #include "share.h"
-#include "sqlite3.h"
 #include "ElementConfig.h"
 #include "Compiler.h"
 
