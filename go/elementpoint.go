@@ -2,19 +2,32 @@ package main
 
 import "fmt"
 
-// Константы для флагов точек
+// Constants for point flags and spacing
 const (
-	POINT_FLG_IS_SELECT = 0x01
-	POINT_OFF           = 3
-	POINT_SPACE         = 7
+	PointFlgIsSelect = 0x01
+	PointOff         = 3
+	PointSpace       = 7
+)
+
+// Point types
+const (
+	PtWork  = 2
+	PtEvent = 0
+	PtVar   = 3
+	PtData  = 1
 )
 
 // PointPos представляет точку пути связи между двумя точками элементов
 type PointPos struct {
-	X    float64   // X позиция точки пути
-	Y    float64   // Y позиция точки пути
-	Next *PointPos // Указатель на следующую точку пути
-	Prev *PointPos // Указатель на предыдущую точку пути
+	X    float64
+	Y    float64
+	Next *PointPos
+	Prev *PointPos
+}
+
+// NewPointPos создает новую точку пути
+func NewPointPos() *PointPos {
+	return &PointPos{}
 }
 
 // ElementPoint представляет точку элемента
@@ -23,7 +36,7 @@ type ElementPoint struct {
 	Name     string        // Имя точки
 	Info     string        // Описание точки
 	Type     int           // Тип точки (pt_work, pt_event, pt_var, pt_data)
-	DataType int           // Тип данных точки (data_int, data_str, data_real, ...)
+	DataType DataType      // Тип данных точки
 	Parent   *Element      // Указатель на родительский элемент
 	Point    *ElementPoint // Указатель на связанную точку (nil по умолчанию)
 	Flag     int           // Флаги POINT_FLG_XXX
@@ -36,17 +49,19 @@ func NewElementPoint(parent *Element, name, info string, pointType int) *Element
 		Info:     info,
 		Type:     pointType,
 		Parent:   parent,
-		DataType: DATA_NULL,
-		Pos: &PointPos{
-			X:    0,
-			Y:    0,
-			Next: nil,
-			Prev: nil,
-		},
-		Point: nil,
-		Flag:  0,
+		DataType: DataNull,
+		Pos:      NewPointPos(),
+		Flag:     0,
 	}
+	ep.Pos.X = 0
+	ep.Pos.Y = 0
 	return ep
+}
+
+// Destroy освобождает ресурсы точки
+func (ep *ElementPoint) Destroy() {
+	ep.Clear()
+	ep.Pos = nil
 }
 
 // Connect связывает две точки без трассировки пути
@@ -60,7 +75,6 @@ func (ep *ElementPoint) Connect(link *ElementPoint) *ElementPoint {
 		p1 = link
 		p2 = ep
 	}
-
 	p1.Point = p2
 	p2.Point = p1
 	p1.Pos.Next = p2.Pos
@@ -77,22 +91,20 @@ func (ep *ElementPoint) CanConnect(link *ElementPoint) bool {
 	if ep.Point != nil || link.Point != nil {
 		return false
 	}
-	// Проверка совместимости типов (abs(type + link->type - 5) == 2)
-	diff := ep.Type + link.Type - 5
-	if diff < 0 {
-		diff = -diff
+	// Проверка: abs(type + link->type - 5) == 2
+	sum := ep.Type + link.Type - 5
+	if sum < 0 {
+		sum = -sum
 	}
-	return diff == 2
+	return sum == 2
 }
 
 // Clear удаляет связь
 func (ep *ElementPoint) Clear() {
 	if ep.Pos.Next != nil {
-		// В оригинале здесь было обновление области перерисовки
-		// r := ep.DrawRect()
+		// В оригинале здесь была отрисовка, заглушка
 		for ep.Pos.Next.Next != nil {
 			pb := ep.Pos.Next.Next
-			// Удаляем промежуточную точку
 			ep.Pos.Next = pb
 		}
 		ep.Pos.Next = nil
@@ -119,19 +131,25 @@ func (ep *ElementPoint) CreatePath() {
 		point2 = ep.Point
 	} else {
 		point1 = ep.Point
-		point2 = ep
+		point2 = point1.Point
 	}
 
-	// В оригинале здесь сложная логика трассировки пути с учетом типов элементов
-	// Для заглушки просто создадим базовый путь
-	_ = point1
-	_ = point2
-
-	// В оригинале: tracePath(point1.pos, v1, v2)
-	// И обновление области перерисовки: parent->parent->on_redraw_rect.run(&r)
+	// Упрощенная версия tracePath без сложной логики отрисовки
+	// В полной версии нужно реализовать алгоритм трассировки из C++ кода
+	AddLinePoint(point1.Pos, point1.Pos.X, point1.Pos.Y)
+	AddLinePoint(point1.Pos, point2.Pos.X, point2.Pos.Y)
 }
 
-// MoveLinePoint перемещает точку связи в позицию (x,y)
+// RemoveLinePoint удаляет точку из пути связи
+func (ep *ElementPoint) RemoveLinePoint(lp *PointPos) {
+	if lp.Prev != nil && lp.Next != nil {
+		lp.Prev.Next = lp.Next
+		lp.Next.Prev = lp.Prev
+		// В оригинале здесь была отрисовка
+	}
+}
+
+// MoveLinePoint перемещает точку пути в позицию (x, y)
 func (ep *ElementPoint) MoveLinePoint(lp *PointPos, x, y float64) {
 	if lp.Next != nil && lp.Next.Next != nil && lp.X == lp.Next.X && lp.Y != lp.Next.Y {
 		lp.X = x
@@ -139,9 +157,9 @@ func (ep *ElementPoint) MoveLinePoint(lp *PointPos, x, y float64) {
 	} else if lp.Prev != nil && lp.Prev.Prev != nil && lp.X == lp.Prev.X && lp.Y != lp.Prev.Y {
 		lp.X = x
 		lp.Prev.X = x
-	} else if lp.Next != nil && absFloat64(lp.Next.X-x) < 5 {
+	} else if lp.Next != nil && absFloat(lp.Next.X-x) < 5 {
 		lp.X = lp.Next.X
-	} else if lp.Prev != nil && absFloat64(lp.Prev.X-x) < 5 {
+	} else if lp.Prev != nil && absFloat(lp.Prev.X-x) < 5 {
 		lp.X = lp.Prev.X
 	} else {
 		lp.X = x
@@ -153,37 +171,20 @@ func (ep *ElementPoint) MoveLinePoint(lp *PointPos, x, y float64) {
 	} else if lp.Prev != nil && lp.Prev.Prev != nil && lp.Y == lp.Prev.Y && lp.X != lp.Prev.X {
 		lp.Y = y
 		lp.Prev.Y = y
-	} else if lp.Next != nil && absFloat64(lp.Next.Y-y) < 5 {
+	} else if lp.Next != nil && absFloat(lp.Next.Y-y) < 5 {
 		lp.Y = lp.Next.Y
-	} else if lp.Prev != nil && absFloat64(lp.Prev.Y-y) < 5 {
+	} else if lp.Prev != nil && absFloat(lp.Prev.Y-y) < 5 {
 		lp.Y = lp.Prev.Y
 	} else {
 		lp.Y = y
 	}
-
-	// В оригинале здесь обновление области перерисовки
 }
 
-// RemoveLinePoint удаляет точку из связи
-func (ep *ElementPoint) RemoveLinePoint(lp *PointPos) {
-	if lp.Prev != nil {
-		lp.Prev.Next = lp.Next
-	}
-	if lp.Next != nil {
-		lp.Next.Prev = lp.Prev
-	}
-	// Удаляем точку (в Go сборщик мусора сделает это сам)
-	_ = lp
-}
-
-// AddLinePoint добавляет точку к связи в позиции (x,y)
+// AddLinePoint добавляет точку в путь связи
 func AddLinePoint(lp *PointPos, x, y float64) *PointPos {
-	np := &PointPos{
-		X:    x,
-		Y:    y,
-		Next: nil,
-		Prev: nil,
-	}
+	np := NewPointPos()
+	np.X = x
+	np.Y = y
 
 	if lp != nil {
 		np.Next = lp.Next
@@ -193,7 +194,6 @@ func AddLinePoint(lp *PointPos, x, y float64) *PointPos {
 			np.Next.Prev = np
 		}
 	}
-
 	return np
 }
 
@@ -204,14 +204,13 @@ func (ep *ElementPoint) IsPrimary() bool {
 
 // IsSelect проверяет флаг POINT_FLG_IS_SELECT
 func (ep *ElementPoint) IsSelect() bool {
-	return (ep.Flag & POINT_FLG_IS_SELECT) != 0
+	return (ep.Flag & PointFlgIsSelect) != 0
 }
 
-// Move перемещает точку на указанное смещение
+// Move перемещает точку на указанный оффсет
 func (ep *ElementPoint) Move(dx, dy float64) {
 	pb := ep.Pos
-
-	if ep.Point != nil && (ep.Point.Parent.Flag&ELEMENT_FLG_IS_SELECT) != 0 {
+	if ep.Point != nil && (ep.Point.Parent.Flag&ElementFlgIsSelect) != 0 {
 		if pb.Next != nil && ep.IsPrimary() {
 			ep.movePoints(pb.Next, dx, dy)
 		}
@@ -233,32 +232,31 @@ func (ep *ElementPoint) Move(dx, dy float64) {
 		if pb.Prev != nil && pb.Prev.Prev != nil {
 			if pb.Prev.Y == pb.Y {
 				pb.Prev.Y += dy
-				if absFloat64(pb.X+dx-pb.Prev.X) < 3 {
+				if absFloat(pb.X+dx-pb.Prev.X) < 3 {
 					ep.movePos(pb.Prev, pb.Prev.X+dx, pb.Prev.Y)
 				}
 			} else if pb.Prev.X == pb.X {
 				pb.Prev.X += dx
-				if absFloat64(pb.Prev.Y-(pb.Y+dy)) < 3 {
+				if absFloat(pb.Prev.Y-(pb.Y+dy)) < 3 {
 					ep.movePos(pb.Prev, pb.Prev.X, pb.Prev.Y+dy)
 				}
 			}
 		}
 	}
-
 	pb.Y += dy
 	pb.X += dx
 }
 
-// movePoints вспомогательная функция для перемещения всех точек связи
+// movePoints сдвигает все точки связи на (dx, dy)
 func (ep *ElementPoint) movePoints(pb *PointPos, dx, dy float64) {
-	for pb != nil {
+	for pb.Next != nil {
 		pb.X += dx
 		pb.Y += dy
 		pb = pb.Next
 	}
 }
 
-// movePos вспомогательная функция для перемещения точки связи в позицию
+// movePos перемещает точку связи в позицию (x, y)
 func (ep *ElementPoint) movePos(pb *PointPos, x, y float64) {
 	if pb.Next != nil && pb.Next.Next != nil && pb.X == pb.Next.X && pb.Y != pb.Next.Y {
 		pb.X = x
@@ -266,9 +264,9 @@ func (ep *ElementPoint) movePos(pb *PointPos, x, y float64) {
 	} else if pb.Prev != nil && pb.Prev.Prev != nil && pb.X == pb.Prev.X && pb.Y != pb.Prev.Y {
 		pb.X = x
 		pb.Prev.X = x
-	} else if pb.Next != nil && absFloat64(pb.Next.X-x) < 5 {
+	} else if pb.Next != nil && absFloat(pb.Next.X-x) < 5 {
 		pb.X = pb.Next.X
-	} else if pb.Prev != nil && absFloat64(pb.Prev.X-x) < 5 {
+	} else if pb.Prev != nil && absFloat(pb.Prev.X-x) < 5 {
 		pb.X = pb.Prev.X
 	} else {
 		pb.X = x
@@ -280,31 +278,30 @@ func (ep *ElementPoint) movePos(pb *PointPos, x, y float64) {
 	} else if pb.Prev != nil && pb.Prev.Prev != nil && pb.Y == pb.Prev.Y && pb.X != pb.Prev.X {
 		pb.Y = y
 		pb.Prev.Y = y
-	} else if pb.Next != nil && absFloat64(pb.Next.Y-y) < 5 {
+	} else if pb.Next != nil && absFloat(pb.Next.Y-y) < 5 {
 		pb.Y = pb.Next.Y
-	} else if pb.Prev != nil && absFloat64(pb.Prev.Y-y) < 5 {
+	} else if pb.Prev != nil && absFloat(pb.Prev.Y-y) < 5 {
 		pb.Y = pb.Prev.Y
 	} else {
 		pb.Y = y
 	}
 }
 
-// DrawRect вычисляет прямоугольник области отрисовки точки
-// Возвращает координаты (x1, y1, x2, y2)
-func (ep *ElementPoint) DrawRect() (float64, float64, float64, float64) {
+// DrawRect вычисляет прямоугольник отрисовки точки
+func (ep *ElementPoint) DrawRect() (x1, y1, x2, y2 float64) {
 	var p *PointPos
-	if ep.Type == PT_EVENT || ep.Type == PT_DATA || ep.Point == nil {
+	if ep.Type == PtEvent || ep.Type == PtData || ep.Point == nil {
 		p = ep.Pos
 	} else {
 		p = ep.Point.Pos
 	}
+	x1 = p.X
+	y1 = p.Y
+	x2 = p.X
+	y2 = p.Y
 
-	x1, y1 := p.X, p.Y
-	x2, y2 := p.X, p.Y
-
-	curr := p
-	for curr.Next != nil {
-		curr = curr.Next
+	curr := p.Next
+	for curr != nil {
 		if curr.X < x1 {
 			x1 = curr.X
 		}
@@ -317,12 +314,12 @@ func (ep *ElementPoint) DrawRect() (float64, float64, float64, float64) {
 		if curr.Y > y2 {
 			y2 = curr.Y
 		}
+		curr = curr.Next
 	}
-
-	return x1 - POINT_OFF, y1 - POINT_OFF, x2 - x1 + POINT_SPACE, y2 - y1 + POINT_SPACE
+	return x1 - PointOff, y1 - PointOff, x2 - x1 + PointSpace, y2 - y1 + PointSpace
 }
 
-// SerializePath сериализует данные пути в строку формата: (x1,y1),(x2,y2),...,(xN,yN)
+// SerializePath сохраняет данные пути в строку в формате: (x1,y1),(x2,y2),...,(xN,yN)
 func (ep *ElementPoint) SerializePath() string {
 	path := ""
 	p := ep.Pos.Next
@@ -337,53 +334,27 @@ func (ep *ElementPoint) SerializePath() string {
 func (ep *ElementPoint) GetRealPointWithPath() *ElementPoint {
 	root := ep
 	result := ep
+	var p *ElementPoint
 
 	for {
-		p := result
+		p = result
 		if p.Parent != nil {
 			result = p.Parent.GetRealPoint(p)
 		} else {
-			result = nil
+			break
 		}
-
 		if p == result || result == nil || root == result {
 			break
 		}
 	}
 
 	if root == result {
-		// Возвращаем последнюю успешную точку
-		// В упрощенной версии возвращаем себя
-		return ep
+		result = p
 	}
 	return result
 }
 
-// OnEvent обрабатывает событие
-func (ep *ElementPoint) OnEvent(data *TData) {
-	if ep.Point != nil {
-		e := ep.Point.Parent
-		if e != nil && e.IsCore() {
-			// В оригинале: dynamic_cast<ElementCore*>(e)->do_work(point, data)
-			// Заглушка для вызова метода do_work
-			fmt.Printf("OnEvent вызван для элемента %s\n", e.Name)
-		}
-	}
-}
-
-// GetData получает данные
-func (ep *ElementPoint) GetData(data *TData) {
-	if ep.Point != nil {
-		e := ep.Point.Parent
-		if e != nil && e.IsCore() {
-			// В оригинале: dynamic_cast<ElementCore*>(e)->read_var(point, data)
-			// Заглушка для вызова метода read_var
-			fmt.Printf("GetData вызван для элемента %s\n", e.Name)
-		}
-	}
-}
-
-// GetPair получает тип парной точки для подключения
+// GetPair возвращает тип парной точки для подключения
 func (ep *ElementPoint) GetPair() int {
 	if ep.IsPrimary() {
 		return ep.Type - 1
@@ -391,17 +362,61 @@ func (ep *ElementPoint) GetPair() int {
 	return ep.Type + 1
 }
 
-// GetDirection получает направление точки
-// Возвращает 1 для work-event связи и 0 для var-data
+// GetDirection возвращает направление точки (1 для work-event, 0 для var-data)
 func (ep *ElementPoint) GetDirection() int {
-	if ep.Type == PT_EVENT || ep.Type == PT_WORK {
+	if ep.Type == PtEvent || ep.Type == PtWork {
 		return 1
 	}
 	return 0
 }
 
-// Вспомогательная функция для абсолютного значения float64
-func absFloat64(x float64) float64 {
+// OnEvent обрабатывает событие с данными
+func (ep *ElementPoint) OnEvent(data *TData) {
+	if ep.Point != nil {
+		e := ep.Point.Parent
+		if e != nil && e.IsCore() {
+			// Вызов do_work у ядра элемента
+			e.DoWork(ep.Point, data)
+		}
+	}
+}
+
+// OnEventString обрабатывает событие со строковым значением
+func (ep *ElementPoint) OnEventString(value string) {
+	data := NewTDataStr(value)
+	ep.OnEvent(data)
+}
+
+// OnEventInt обрабатывает событие с целочисленным значением
+func (ep *ElementPoint) OnEventInt(value int) {
+	data := NewTDataInt(value)
+	ep.OnEvent(data)
+}
+
+// OnEventReal обрабатывает событие с вещественным значением
+func (ep *ElementPoint) OnEventReal(value float64) {
+	data := NewTDataReal(value)
+	ep.OnEvent(data)
+}
+
+// GetData получает данные
+func (ep *ElementPoint) GetData(data *TData) {
+	if ep.Point != nil {
+		e := ep.Point.Parent
+		if e != nil && e.IsCore() {
+			// Вызов read_var у ядра элемента
+			e.ReadVar(ep.Point, data)
+		}
+	}
+}
+
+// Invalidate обновляет область отрисовки (заглушка без GUI)
+func (ep *ElementPoint) Invalidate() {
+	// Заглушка - в оригинале вызывалась перерисовка
+}
+
+// Вспомогательная функция
+func absFloat(x float64) float64 {
 	if x < 0 {
 		return -x
 	}
