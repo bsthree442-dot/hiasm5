@@ -9,6 +9,7 @@ type Element struct {
 	Y        int
 	Width    int
 	Height   int
+	Flag     int // Флаги элемента
 	props    map[string]interface{}
 	points   []Point
 	events   []string
@@ -16,6 +17,19 @@ type Element struct {
 	visible  bool
 	locked   bool
 }
+
+// Константы флагов элемента
+const (
+	ELEMENT_FLG_IS_SELECT = 0x01
+)
+
+// Константы типов точек
+const (
+	PT_EVENT = iota
+	PT_DATA
+	PT_WORK
+	PT_VAR
+)
 
 // Point представляет точку соединения элемента
 type Point struct {
@@ -141,4 +155,16 @@ func (e *Element) GetEvent(index int) string {
 		return ""
 	}
 	return e.events[index]
+}
+
+// IsCore проверяет, является ли элемент ядровым
+func (e *Element) IsCore() bool {
+	// Заглушка: в оригинале здесь была проверка на ElementCore
+	return false
+}
+
+// GetRealPoint получает реальную точку для данной точки
+func (e *Element) GetRealPoint(p *ElementPoint) *ElementPoint {
+	// Заглушка: в оригинале здесь была сложная логика получения реальной точки
+	return p
 }

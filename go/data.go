@@ -8,20 +8,12 @@ import (
 // DataType представляет тип данных
 type DataType int
 
+// Константы типов данных
 const (
-	DataNull DataType = iota
-	DataInt
-	DataReal
-	DataStr
-	DataPixbuf
-	DataArray
-	DataCombo
-	DataComboEx
-	DataList
-	DataStock
-	DataElement
-	DataColor
-	DataData
+	DATA_NULL = iota
+	DATA_INT
+	DATA_REAL
+	DATA_STR
 )
 
 // Вспомогательные функции для преобразования типов
@@ -80,22 +72,22 @@ type TData struct {
 
 // NewTData создает пустые данные (null)
 func NewTData() *TData {
-	return &TData{Type: DataNull}
+	return &TData{Type: DATA_NULL}
 }
 
 // NewTDataInt создает целочисленные данные
 func NewTDataInt(value int) *TData {
-	return &TData{Type: DataInt, IData: value}
+	return &TData{Type: DATA_INT, IData: value}
 }
 
 // NewTDataReal создает вещественные данные
 func NewTDataReal(value float64) *TData {
-	return &TData{Type: DataReal, RData: value}
+	return &TData{Type: DATA_REAL, RData: value}
 }
 
 // NewTDataStr создает строковые данные
 func NewTDataStr(value string) *TData {
-	return &TData{Type: DataStr, SData: value}
+	return &TData{Type: DATA_STR, SData: value}
 }
 
 // NewTDataCopy создает копию данных
@@ -104,7 +96,7 @@ func NewTDataCopy(source *TData) *TData {
 	if source != nil {
 		d.Assign(source)
 	} else {
-		d.Type = DataNull
+		d.Type = DATA_NULL
 	}
 	return d
 }
@@ -140,9 +132,9 @@ func (d *TData) AssignMt(src *TData) *TData {
 	return d
 }
 
-// Clear очищает данные (устанавливает тип в DataNull)
+// Clear очищает данные (устанавливает тип в DATA_NULL)
 func (d *TData) Clear() {
-	d.Type = DataNull
+	d.Type = DATA_NULL
 	if d.Next != nil {
 		d.Next.Destroy()
 		d.Next = nil
@@ -152,11 +144,11 @@ func (d *TData) Clear() {
 // Empty проверяет, пусто ли значение данных
 func (d *TData) Empty() bool {
 	switch d.Type {
-	case DataInt:
+	case DATA_INT:
 		return d.IData == 0
-	case DataReal:
+	case DATA_REAL:
 		return d.RData == 0.0
-	case DataStr:
+	case DATA_STR:
 		return d.SData == ""
 	default:
 		return true
@@ -165,17 +157,17 @@ func (d *TData) Empty() bool {
 
 // IsNull проверяет, является ли тип данных null
 func (d *TData) IsNull() bool {
-	return d.Type == DataNull
+	return d.Type == DATA_NULL
 }
 
 // ToStr преобразует данные в строку
 func (d *TData) ToStr() string {
 	switch d.Type {
-	case DataInt:
+	case DATA_INT:
 		return IntToStr(d.IData)
-	case DataStr:
+	case DATA_STR:
 		return d.SData
-	case DataReal:
+	case DATA_REAL:
 		return FloatToStr(d.RData)
 	default:
 		return ""
@@ -185,11 +177,11 @@ func (d *TData) ToStr() string {
 // ToInt преобразует данные в целое число
 func (d *TData) ToInt() int {
 	switch d.Type {
-	case DataInt:
+	case DATA_INT:
 		return d.IData
-	case DataStr:
+	case DATA_STR:
 		return StrToInt(d.SData)
-	case DataReal:
+	case DATA_REAL:
 		return int(d.RData)
 	default:
 		return 0
@@ -199,11 +191,11 @@ func (d *TData) ToInt() int {
 // ToReal преобразует данные в вещественное число
 func (d *TData) ToReal() float64 {
 	switch d.Type {
-	case DataInt:
+	case DATA_INT:
 		return float64(d.IData)
-	case DataStr:
+	case DATA_STR:
 		return StrToFloat(d.SData)
-	case DataReal:
+	case DATA_REAL:
 		return d.RData
 	default:
 		return 0.0
@@ -217,32 +209,26 @@ func (d *TData) ToObj() interface{} {
 
 // ToPixbuf возвращает pixbuf данные (заглушка)
 func (d *TData) ToPixbuf() interface{} {
-	if d.Type == DataPixbuf {
-		return d.Data
-	}
+	// Заглушка: тип DataPixbuf удален
 	return nil
 }
 
 // ToArray возвращает массив данных
 func (d *TData) ToArray() DataArrayInterface {
-	if d.Type == DataArray {
-		if arr, ok := d.Data.(DataArrayInterface); ok {
-			return arr
-		}
-	}
+	// Заглушка: тип DataArray удален
 	return nil
 }
 
 // Compare сравнивает два TData с преобразованием типов
 func (d *TData) Compare(other *TData) bool {
 	switch d.Type {
-	case DataNull:
+	case DATA_NULL:
 		return other.Empty()
-	case DataInt:
+	case DATA_INT:
 		return d.IData == other.ToInt()
-	case DataReal:
+	case DATA_REAL:
 		return d.RData == other.ToReal()
-	case DataStr:
+	case DATA_STR:
 		return d.SData == other.ToStr()
 	default:
 		return false
@@ -253,13 +239,13 @@ func (d *TData) Compare(other *TData) bool {
 func (d *TData) Equal(other *TData) bool {
 	if d.Type == other.Type {
 		switch d.Type {
-		case DataNull:
-			return other.Type == DataNull
-		case DataInt:
+		case DATA_NULL:
+			return other.Type == DATA_NULL
+		case DATA_INT:
 			return other.IData == d.IData
-		case DataReal:
+		case DATA_REAL:
 			return other.RData == d.RData
-		case DataStr:
+		case DATA_STR:
 			return other.SData == d.SData
 		default:
 			return false
